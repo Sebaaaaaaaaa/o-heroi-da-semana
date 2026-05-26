@@ -104,4 +104,250 @@
       border-width: 2px;
       box-shadow: 0 8px 32px rgba(249,115,22,0.13);
     }
-    .card-wrap.is-center .card::before
+    .card-wrap.is-center .card::before {
+      content: "";
+      position: absolute; top: 0; left: 0; right: 0; height: 5px;
+      background: linear-gradient(90deg, var(--navy), var(--orange));
+    }
+    .card-wrap.is-side { opacity: 0.72; }
+    .card-wrap.is-side .card { transform: scale(0.94); }
+
+    .card-label {
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--muted);
+    }
+    .card-date { font-size: 15px; font-weight: 800; color: var(--orange); }
+    .card-name {
+      font-weight: 950;
+      letter-spacing: -0.04em;
+      color: var(--navy);
+      line-height: 1;
+      word-break: break-word;
+      max-width: 100%;
+    }
+    .is-side .card-name { font-size: clamp(22px, 3.5vw, 38px); }
+    .is-center .card-name { font-size: clamp(40px, 7vw, 80px); }
+
+    .week-indicator { font-size: 11px; color: var(--muted); font-weight: 600; margin-top: 2px; }
+    .is-center .week-indicator { color: var(--orange); }
+
+    .footer { margin-top: 1.5rem; color: var(--muted); font-size: 13px; line-height: 1.7; }
+    .footer strong { color: var(--navy); }
+
+    @media (max-width: 600px) {
+      body { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="badge">Rodízio semanal</div>
+    <h1>Rodízio da Equipe</h1>
+    <p class="subtitle">Arraste para navegar entre as semanas.</p>
+
+    <div class="today-row">
+      <button class="today-btn hidden" id="todayBtn">↩ Voltar para hoje</button>
+    </div>
+
+    <div class="stage" id="stage">
+      <div class="track" id="track"></div>
+    </div>
+
+    <div class="footer">
+      <p>Ordem do rodízio: <strong>Filipe → Sebastian → Gabriel → Igor</strong></p>
+    </div>
+  </main>
+
+  <script>
+    const team = ["Filipe", "Sebastian", "Gabriel", "Igor"];
+    const baseFriday = new Date(2026, 4, 29);
+    const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
+    const TOTAL_CARDS = 21;
+    const CENTER_IDX = Math.floor(TOTAL_CARDS / 2);
+
+    function startOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+    function formatDate(d) {
+      return String(d.getDate()).padStart(2,"0") + "/" +
+             String(d.getMonth()+1).padStart(2,"0") + "/" + d.getFullYear();
+    }
+    function getCurrentFriday() {
+      const c = startOfDay(new Date());
+      const diff = 5 - c.getDay();
+      const f = new Date(c);
+      f.setDate(c.getDate() + diff);
+      return startOfDay(f);
+    }
+    function getRotationIndex(fridayDate) {
+      return Math.round((fridayDate - baseFriday) / MS_PER_WEEK);
+    }
+    function getPerson(weekIndex) {
+      return team[((weekIndex % team.length) + team.length) % team.length];
+    }
+    function getLabel(rel) {
+      if (rel === -1) return "Semana anterior";
+      if (rel === 0) return "Sexta-feira atual";
+      if (rel === 1) return "Próxima semana";
+      if (rel < 0) return `${Math.abs(rel)} semanas atrás`;
+      return `Daqui a ${rel} semana${rel > 1 ? "s" : ""}`;
+    }
+
+    let offsetFromToday = 0;
+    let cardW = 0;
+    const gap = 20;
+    let currentX = 0;
+
+    const stage = document.getElementById("stage");
+    const track = document.getElementById("track");
+
+    function buildCards() {
+      track.innerHTML = "";
+      const stageW = stage.offsetWidth;
+      cardW = Math.min(Math.floor((stageW - gap * 2) / 3), 280);
+      track.style.setProperty("--card-w", cardW + "px");
+
+      for (let i = 0; i < TOTAL_CARDS; i++) {
+        const rel = i - CENTER_IDX;
+        const absOffset = offsetFromToday + rel;
+        const base = getCurrentFriday();
+        const friday = new Date(base);
+        friday.setDate(base.getDate() + absOffset * 7);
+        const sd = startOfDay(friday);
+        const weekIndex = getRotationIndex(sd);
+        const person = getPerson(weekIndex);
+        const isCenter = (i === CENTER_IDX);
+
+        const wrap = document.createElement("div");
+        wrap.className = "card-wrap" + (isCenter ? " is-center" : " is-side");
+        wrap.dataset.idx = i;
+        wrap.innerHTML = `<div class="card">
+          <p class="card-label">${getLabel(absOffset)}</p>
+          <p class="card-date">${formatDate(sd)}</p>
+          <h2 class="card-name">${person}</h2>
+          <span class="week-indicator">${absOffset === 0 ? "Esta semana" : (absOffset > 0 ? "+" : "") + absOffset + " sem."}</span>
+        </div>`;
+        track.appendChild(wrap);
+      }
+
+      snapTo(CENTER_IDX, false);
+      updateHighlight(CENTER_IDX);
+      document.getElementById("todayBtn").classList.toggle("hidden", offsetFromToday === 0);
+    }
+
+    function getSnapX(idx) {
+      const stageW = stage.offsetWidth;
+      const unit = cardW + gap;
+      const startOffset = (stageW - cardW) / 2;
+      return -(idx * unit - startOffset);
+    }
+
+    function snapTo(idx, animate) {
+      const x = getSnapX(idx);
+      currentX = x;
+      track.style.transition = animate ? "transform 0.35s cubic-bezier(0.4,0,0.2,1)" : "none";
+      track.style.transform = `translateX(${x}px)`;
+    }
+
+    function updateHighlight(idx) {
+      track.querySelectorAll(".card-wrap").forEach((w, i) => {
+        w.className = "card-wrap" + (i === idx ? " is-center" : " is-side");
+      });
+    }
+
+    function getIdxFromX(x) {
+      const stageW = stage.offsetWidth;
+      const unit = cardW + gap;
+      const startOffset = (stageW - cardW) / 2;
+      return Math.round((-x + startOffset) / unit);
+    }
+
+    let isDragging = false;
+    let startMouseX = 0;
+    let startTrackX = 0;
+    let lastMouseX = 0;
+    let velocity = 0;
+    let lastTimestamp = 0;
+
+    stage.addEventListener("mousedown", e => {
+      isDragging = true;
+      startMouseX = e.clientX;
+      lastMouseX = e.clientX;
+      startTrackX = currentX;
+      velocity = 0;
+      lastTimestamp = Date.now();
+      track.style.transition = "none";
+      stage.classList.add("dragging");
+      e.preventDefault();
+    });
+
+    window.addEventListener("mousemove", e => {
+      if (!isDragging) return;
+      const dx = e.clientX - startMouseX;
+      const now = Date.now();
+      velocity = (e.clientX - lastMouseX) / (now - lastTimestamp + 1);
+      lastMouseX = e.clientX;
+      lastTimestamp = now;
+      currentX = startTrackX + dx;
+      track.style.transform = `translateX(${currentX}px)`;
+      const nearIdx = Math.max(0, Math.min(TOTAL_CARDS - 1, getIdxFromX(currentX)));
+      updateHighlight(nearIdx);
+    });
+
+    window.addEventListener("mouseup", () => {
+      if (!isDragging) return;
+      isDragging = false;
+      stage.classList.remove("dragging");
+      const momentum = velocity * 120;
+      const projectedX = currentX + momentum;
+      let snapIdx = Math.max(0, Math.min(TOTAL_CARDS - 1, getIdxFromX(projectedX)));
+      const delta = snapIdx - CENTER_IDX;
+      offsetFromToday += delta;
+      buildCards();
+    });
+
+    stage.addEventListener("touchstart", e => {
+      isDragging = true;
+      startMouseX = e.touches[0].clientX;
+      lastMouseX = e.touches[0].clientX;
+      startTrackX = currentX;
+      velocity = 0;
+      lastTimestamp = Date.now();
+      track.style.transition = "none";
+    }, { passive: true });
+
+    stage.addEventListener("touchmove", e => {
+      if (!isDragging) return;
+      const dx = e.touches[0].clientX - startMouseX;
+      const now = Date.now();
+      velocity = (e.touches[0].clientX - lastMouseX) / (now - lastTimestamp + 1);
+      lastMouseX = e.touches[0].clientX;
+      lastTimestamp = now;
+      currentX = startTrackX + dx;
+      track.style.transform = `translateX(${currentX}px)`;
+      const nearIdx = Math.max(0, Math.min(TOTAL_CARDS - 1, getIdxFromX(currentX)));
+      updateHighlight(nearIdx);
+    }, { passive: true });
+
+    stage.addEventListener("touchend", () => {
+      if (!isDragging) return;
+      isDragging = false;
+      const momentum = velocity * 120;
+      const projectedX = currentX + momentum;
+      let snapIdx = Math.max(0, Math.min(TOTAL_CARDS - 1, getIdxFromX(projectedX)));
+      const delta = snapIdx - CENTER_IDX;
+      offsetFromToday += delta;
+      buildCards();
+    });
+
+    document.getElementById("todayBtn").addEventListener("click", () => {
+      offsetFromToday = 0;
+      buildCards();
+    });
+
+    buildCards();
+    window.addEventListener("resize", buildCards);
+  </script>
+</body>
+</html>
