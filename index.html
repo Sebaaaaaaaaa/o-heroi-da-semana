@@ -3,312 +3,105 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rodízio da Equipe</title>
-
+  <title>Herói da semana</title>
   <style>
     :root {
-      --bg: #ffffff;
       --navy: #0f2742;
-      --navy-soft: #163b63;
       --orange: #f97316;
       --orange-soft: #fff3e8;
-      --card: #ffffff;
       --muted: #64748b;
       --border: #e5e7eb;
-      --shadow: rgba(15, 39, 66, 0.08);
     }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       min-height: 100vh;
-      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: var(--bg);
+      font-family: Inter, system-ui, -apple-system, sans-serif;
+      background: #ffffff;
       color: var(--navy);
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 24px;
     }
-
-    .page {
-      width: 100%;
-      max-width: 1120px;
-      text-align: center;
-    }
-
-    .header {
-      margin-bottom: 56px;
-    }
+    .page { max-width: 900px; width: 100%; text-align: center; }
 
     .badge {
       display: inline-block;
-      padding: 8px 16px;
+      padding: 6px 14px;
       border-radius: 999px;
       background: var(--orange-soft);
       color: var(--orange);
-      border: 1px solid rgba(249, 115, 22, 0.22);
-      font-size: 14px;
+      border: 1px solid rgba(249,115,22,0.22);
+      font-size: 13px;
       font-weight: 800;
-      margin-bottom: 18px;
+      margin-bottom: 14px;
     }
-
     h1 {
-      font-size: clamp(36px, 6vw, 64px);
-      letter-spacing: -0.05em;
-      margin-bottom: 12px;
+      font-size: clamp(28px, 5vw, 52px);
+      letter-spacing: -0.04em;
+      margin-bottom: 8px;
       color: var(--navy);
     }
+    .subtitle { color: var(--muted); font-size: 15px; line-height: 1.6; margin-bottom: 1.5rem; }
 
-    .subtitle {
-      color: var(--muted);
-      font-size: 18px;
-      line-height: 1.6;
-    }
-
-    .rotation {
-      display: grid;
-      grid-template-columns: 1fr 1.35fr 1fr;
+    .today-row {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 1.25rem;
+      min-height: 36px;
       align-items: center;
-      gap: 24px;
+    }
+    .today-btn {
+      padding: 7px 20px;
+      border-radius: 999px;
+      border: 1.5px solid var(--border);
+      background: white;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+      transition: all 0.15s;
+      letter-spacing: 0.03em;
+    }
+    .today-btn:hover { border-color: var(--orange); color: var(--orange); background: var(--orange-soft); }
+    .today-btn.hidden { opacity: 0; pointer-events: none; }
+
+    .stage {
+      overflow: hidden;
+      position: relative;
+      width: 100%;
+      cursor: grab;
+      user-select: none;
+    }
+    .stage.dragging { cursor: grabbing; }
+
+    .track {
+      display: flex;
+      gap: 20px;
+      will-change: transform;
+      padding: 12px 4px 20px;
     }
 
-    .person-card {
-      border: 1px solid var(--border);
-      border-radius: 28px;
-      padding: 32px 24px;
-      background: var(--card);
-      box-shadow: 0 18px 50px var(--shadow);
-    }
+    .card-wrap { flex: 0 0 var(--card-w); min-width: 0; }
 
-    .person-card.side {
-      opacity: 0.82;
-      transform: scale(0.92);
-      background: #fbfdff;
-    }
-
-    .person-card.current {
-      border: 2px solid var(--orange);
-      padding: 52px 28px;
-      min-height: 340px;
+    .card {
+      border: 1.5px solid var(--border);
+      border-radius: 24px;
+      padding: 24px 16px;
+      background: white;
+      height: 100%;
       display: flex;
       flex-direction: column;
+      align-items: center;
       justify-content: center;
+      gap: 6px;
       position: relative;
       overflow: hidden;
+      transition: box-shadow 0.2s, border-color 0.2s;
     }
-
-    .person-card.current::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 8px;
-      background: linear-gradient(90deg, var(--navy), var(--orange));
+    .card-wrap.is-center .card {
+      border-color: var(--orange);
+      border-width: 2px;
+      box-shadow: 0 8px 32px rgba(249,115,22,0.13);
     }
-
-    .label {
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      font-size: 13px;
-      font-weight: 900;
-      margin-bottom: 16px;
-    }
-
-    .date {
-      color: var(--orange);
-      font-size: clamp(22px, 3vw, 32px);
-      font-weight: 900;
-      margin-bottom: 18px;
-    }
-
-    .name {
-      font-weight: 950;
-      letter-spacing: -0.05em;
-      color: var(--navy);
-    }
-
-    .side .name {
-      font-size: clamp(30px, 4vw, 46px);
-    }
-
-    .current .name {
-      font-size: clamp(64px, 11vw, 128px);
-      line-height: 0.95;
-    }
-
-    .footer {
-      margin-top: 56px;
-      color: var(--muted);
-      font-size: 15px;
-      line-height: 1.6;
-    }
-
-    .footer strong {
-      color: var(--navy);
-    }
-
-    @media (max-width: 850px) {
-      body {
-        padding: 18px;
-      }
-
-      .header {
-        margin-bottom: 32px;
-      }
-
-      .rotation {
-        grid-template-columns: 1fr;
-        gap: 16px;
-      }
-
-      .person-card.side {
-        transform: none;
-        opacity: 0.86;
-      }
-
-      .person-card.current {
-        order: -1;
-        min-height: 260px;
-      }
-    }
-  </style>
-</head>
-
-<body>
-  <main class="page">
-    <section class="header">
-      <div class="badge">Rodízio semanal</div>
-      <h1>Rodízio da Equipe</h1>
-      <p class="subtitle">
-        Veja quem é o responsável nesta sexta-feira.
-      </p>
-    </section>
-
-    <section class="rotation">
-      <article class="person-card side">
-        <p class="label">Semana anterior</p>
-        <p class="date" id="previousDate">--/--/----</p>
-        <h2 class="name" id="previousName">---</h2>
-      </article>
-
-      <article class="person-card current">
-        <p class="label">Sexta-feira atual</p>
-        <p class="date" id="currentDate">--/--/----</p>
-        <h2 class="name" id="currentName">---</h2>
-      </article>
-
-      <article class="person-card side">
-        <p class="label">Próxima semana</p>
-        <p class="date" id="nextDate">--/--/----</p>
-        <h2 class="name" id="nextName">---</h2>
-      </article>
-    </section>
-
-    <section class="footer">
-      <p>
-        Ordem do rodízio:
-        <strong>Filipe → Sebastian → Gabriel → Igor</strong>
-      </p>
-    </section>
-  </main>
-
-  <script>
-    const team = ["Filipe", "Sebastian", "Gabriel", "Igor"];
-
-    /*
-      Rodízio base:
-      29/05/2026 = Filipe
-      05/06/2026 = Sebastian
-    */
-    const baseFriday = new Date(2026, 4, 29);
-
-    const MS_PER_DAY = 24 * 60 * 60 * 1000;
-    const MS_PER_WEEK = 7 * MS_PER_DAY;
-
-    function startOfDay(date) {
-      return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    }
-
-    function formatDate(date) {
-      const day = String(date.getDate()).padStart(2, "0");
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const year = date.getFullYear();
-
-      return `${day}/${month}/${year}`;
-    }
-
-    function getCurrentFriday(today) {
-      const cleanToday = startOfDay(today);
-
-      /*
-        JavaScript:
-        Domingo = 0
-        Segunda = 1
-        Terça = 2
-        Quarta = 3
-        Quinta = 4
-        Sexta = 5
-        Sábado = 6
-      */
-      const dayOfWeek = cleanToday.getDay();
-      const fridayIndex = 5;
-
-      const differenceToFriday = fridayIndex - dayOfWeek;
-
-      const currentFriday = new Date(cleanToday);
-      currentFriday.setDate(cleanToday.getDate() + differenceToFriday);
-
-      return startOfDay(currentFriday);
-    }
-
-    function getRotationIndex(fridayDate) {
-      const weeksPassed = Math.round((fridayDate - baseFriday) / MS_PER_WEEK);
-      return weeksPassed;
-    }
-
-    function getPersonByWeekIndex(weekIndex) {
-      const memberIndex = ((weekIndex % team.length) + team.length) % team.length;
-      return team[memberIndex];
-    }
-
-    function getRotationData(offset) {
-      const today = new Date();
-      const currentFriday = getCurrentFriday(today);
-
-      const targetFriday = new Date(currentFriday);
-      targetFriday.setDate(currentFriday.getDate() + offset * 7);
-
-      const weekIndex = getRotationIndex(targetFriday);
-
-      return {
-        date: targetFriday,
-        person: getPersonByWeekIndex(weekIndex)
-      };
-    }
-
-    function render() {
-      const previous = getRotationData(-1);
-      const current = getRotationData(0);
-      const next = getRotationData(1);
-
-      document.getElementById("previousDate").textContent = formatDate(previous.date);
-      document.getElementById("previousName").textContent = previous.person;
-
-      document.getElementById("currentDate").textContent = formatDate(current.date);
-      document.getElementById("currentName").textContent = current.person;
-
-      document.getElementById("nextDate").textContent = formatDate(next.date);
-      document.getElementById("nextName").textContent = next.person;
-    }
-
-    render();
-  </script>
-</body>
-</html>
+    .card-wrap.is-center .card::before
