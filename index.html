@@ -87,7 +87,7 @@
     .card {
       border: 1.5px solid var(--border);
       border-radius: 24px;
-      padding: 28px 18px;
+      padding: 30px 20px;
       background: white;
       height: 170px;
       display: flex;
@@ -176,7 +176,7 @@
 <body>
   <main class="page">
     <div class="badge">Rodízio semanal</div>
-    <h1>Rodízio da Equipe</h1>
+    <h1>O Herói da Semana</h1>
     <p class="subtitle">Arraste para navegar entre as semanas.</p>
 
     <div class="today-row">
@@ -236,7 +236,7 @@
     function buildCards() {
       track.innerHTML = "";
       const stageW = stage.offsetWidth;
-      cardW = Math.min(Math.floor((stageW - gap * 2) / 3), 340);
+      cardW = Math.min(Math.floor((stageW - gap * 2) / 3), 360);
       track.style.setProperty("--card-w", cardW + "px");
 
       for (let i = 0; i < TOTAL_CARDS; i++) {
