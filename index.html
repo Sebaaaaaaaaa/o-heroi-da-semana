@@ -153,12 +153,19 @@
     .week-indicator { font-size: 11px; color: var(--muted); font-weight: 600; margin-top: 2px; }
     .is-center .week-indicator { color: var(--orange); }
 
-    .person-avatar {
-      width: 70px;
-      height: 70px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 3px solid var(--orange);
+    .bg-avatar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      pointer-events: none;
+      z-index: -1;
+      opacity: 0.8;
+      transition: background-image 0.5s ease-in-out;
     }
 
     .footer { margin-top: 1.5rem; color: var(--muted); font-size: 13px; line-height: 1.7; }
@@ -194,17 +201,18 @@
   </style>
 </head>
 <body>
+  <div class="bg-avatar" id="bgAvatar"></div>
   <main class="page">
     <div class="badge">Rodízio semanal</div>
     <h1>O Herói da Semana</h1>
     <p class="subtitle">Arraste para navegar entre as semanas.</p>
 
-    <div class="today-row">
-      <button class="today-btn hidden" id="todayBtn">↩ Voltar para hoje</button>
-    </div>
-
     <div class="hero-container">
       <img id="heroImage" class="hero-image">
+    </div>
+
+    <div class="today-row">
+      <button class="today-btn hidden" id="todayBtn">↩ Voltar para hoje</button>
     </div>
 
     <div class="stage" id="stage">
@@ -256,7 +264,8 @@
       return Math.round((fridayDate - baseFriday) / MS_PER_WEEK);
     }
     function getPerson(weekIndex) {
-      return team[((weekIndex % team.length) + team.length) % team.length];
+      const keys = Object.keys(team);
+      return keys[((weekIndex % keys.length) + keys.length) % keys.length];
     }
     function getLabel(rel) {
       if (rel === -1) return "Semana anterior";
@@ -295,6 +304,8 @@
         if (isCenter) {
             document.getElementById("heroImage").src =
                 personData.extra;
+            document.getElementById("bgAvatar").style.backgroundImage =
+                `url('${personData.avatar}')`;
         }
 
         const wrap = document.createElement("div");
@@ -304,10 +315,6 @@
         <div class="card">
           <p class="card-label">${getLabel(absOffset)}</p>
           <p class="card-date">${formatDate(sd)}</p>
-
-          <img class="person-avatar"
-              src="${personData.avatar}"
-              alt="${person}">
 
           <h2 class="card-name">${person}</h2>
 
