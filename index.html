@@ -27,7 +27,16 @@
       padding: 24px;
     }
     .page { max-width: 900px; width: 100%; text-align: center; }
+    .hero-container {
+      margin-bottom: 20px;
+    }
 
+    .hero-image {
+      max-width: 100%;
+      width: 500px;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0,0,0,.15);
+    }
     .badge {
       display: inline-block;
       padding: 6px 14px;
@@ -144,6 +153,14 @@
     .week-indicator { font-size: 11px; color: var(--muted); font-weight: 600; margin-top: 2px; }
     .is-center .week-indicator { color: var(--orange); }
 
+    .person-avatar {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid var(--orange);
+    }
+
     .footer { margin-top: 1.5rem; color: var(--muted); font-size: 13px; line-height: 1.7; }
     .footer strong { color: var(--navy); }
 
@@ -186,6 +203,10 @@
       <button class="today-btn hidden" id="todayBtn">↩ Voltar para hoje</button>
     </div>
 
+    <div class="hero-container">
+      <img id="heroImage" class="hero-image">
+    </div>
+
     <div class="stage" id="stage">
       <div class="track" id="track"></div>
     </div>
@@ -196,7 +217,24 @@
   </main>
 
   <script>
-    const team = ["Filipe", "Sebas", "Gabriel", "Igor"];
+    const team = {
+      "Filipe": {
+        avatar: "img/filipe.png",
+        extra: "img/filipe-info.png"
+      },
+      "Sebas": {
+        avatar: "img/sebas.png",
+        extra: "img/sebas-info.png"
+      },
+      "Gabriel": {
+        avatar: "img/gabriel.png",
+        extra: "img/gabriel-info.png"
+      },
+      "Igor": {
+        avatar: "img/igor.png",
+        extra: "img/igor-info.png"
+      }
+    };
     const baseFriday = new Date(2026, 4, 29);
     const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
     const TOTAL_CARDS = 21;
@@ -251,16 +289,31 @@
         const sd = startOfDay(friday);
         const weekIndex = getRotationIndex(sd);
         const person = getPerson(weekIndex);
+        const personData = team[person];
         const isCenter = (i === CENTER_IDX);
+
+        if (isCenter) {
+            document.getElementById("heroImage").src =
+                personData.extra;
+        }
 
         const wrap = document.createElement("div");
         wrap.className = "card-wrap" + (isCenter ? " is-center" : " is-side");
         wrap.dataset.idx = i;
-        wrap.innerHTML = `<div class="card">
+        wrap.innerHTML = `
+        <div class="card">
           <p class="card-label">${getLabel(absOffset)}</p>
           <p class="card-date">${formatDate(sd)}</p>
+
+          <img class="person-avatar"
+              src="${personData.avatar}"
+              alt="${person}">
+
           <h2 class="card-name">${person}</h2>
-          <span class="week-indicator">${absOffset === 0 ? "Esta semana" : (absOffset > 0 ? "+" : "") + absOffset + " sem."}</span>
+
+          <span class="week-indicator">
+            ${absOffset === 0 ? "Esta semana" : (absOffset > 0 ? "+" : "") + absOffset + " sem."}
+          </span>
         </div>`;
         track.appendChild(wrap);
       }
